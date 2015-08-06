@@ -53,8 +53,8 @@ class Collector
     /**
      * Register a route into GET method.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function get($pattern, $action)
     {
@@ -64,8 +64,8 @@ class Collector
     /**
      * Register a route into POST method.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function post($pattern, $action)
     {
@@ -75,8 +75,8 @@ class Collector
     /**
      * Register a route into PUT method.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function put($pattern, $action)
     {
@@ -86,8 +86,8 @@ class Collector
     /**
      * Register a route into PATCH method.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function patch($pattern, $action)
     {
@@ -97,8 +97,8 @@ class Collector
     /**
      * Register a route into DELETE method.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function delete($pattern, $action)
     {
@@ -108,8 +108,8 @@ class Collector
     /**
      * Register a route into all HTTP methods.
      *
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function any($pattern, $action)
     {
@@ -119,9 +119,9 @@ class Collector
     /**
      * Register a route into all HTTP methods except by $method.
      *
-     * @param string|array   $method  The method(s) that must be excluded.
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $method The method that must be excluded.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function except($method, $pattern, $action)
     {
@@ -131,9 +131,9 @@ class Collector
     /**
      * Register a route into given HTTP method(s).
      *
-     * @param string|array   $methods The method(s) that must be included.
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $method The method that must be matched.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function match($methods, $pattern, $action)
     {
@@ -145,9 +145,9 @@ class Collector
     /**
      * Register a route into given HTTP method.
      *
-     * @param string         $method The method that must be matched.
-     * @param string         $pattern The URi pattern that should be matched.
-     * @param string|closure $action  The action that must be executed in case of match.
+     * @param string                $method The method that must be matched.
+     * @param string                $pattern The URi pattern that should be matched.
+     * @param string|array|\closure $action  The action that must be executed in case of match.
      */
     public function map($method, $pattern, $action)
     {
