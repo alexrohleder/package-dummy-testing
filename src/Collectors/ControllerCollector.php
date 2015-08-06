@@ -27,6 +27,17 @@ class ControllerCollector
     protected $collector;
 
     /**
+     * The PHPDoc types and they constraint.
+     *
+     * @var array
+     */
+    protected $types = [
+        'int' => '\d+',
+        'integer' => '\d+',
+        'string' => '\w+'
+    ];
+
+    /**
      * Construct the route dispatcher.
      *
      * @param \Codeburner\Router\Collector $collector The collector to save routes.
@@ -184,12 +195,7 @@ class ControllerCollector
             return $type[4];
         }
 
-        switch ($type[1]) {
-            case 'int': case 'integer':
-                return '\d+';
-            case 'string':
-                return '\w+';
-        }
+        return $this->types[$type[1]];
     }
 
 }
