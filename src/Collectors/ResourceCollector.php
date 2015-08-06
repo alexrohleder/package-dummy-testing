@@ -68,7 +68,7 @@ class ResourceCollector
 
         foreach ($this->map as $action => $map) {
             if (isset($actions[$action])) {
-                $this->collector->map($map[0], str_replace(':name', $name, $map[1]), [$controller, $action]);
+                $this->collector->match($map[0], str_replace(':name', $name, $map[1]), [$controller, $action]);
             }
         }
     }

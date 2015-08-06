@@ -70,7 +70,7 @@ class ControllerCollector
                 $method  = $httpmethod . $classmethod;
                 $dinamic = $this->getMethodDinamicPattern($controller, $method);
 
-                $this->collector->map($httpmethod, '/' . $uri . $dinamic, $controller . '#' . $method);
+                $this->collector->match($httpmethod, '/' . $uri . $dinamic, $controller . '#' . $method);
             }
         }
     }
