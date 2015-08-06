@@ -268,7 +268,7 @@ class Collector
             return call_user_func_array($this->collectors[$method], $params);
         }
 
-        throw new \Exception('Collector method "'.$method.'" not found, maybe no colector have been registered.');
+        throw new \Exception('Collector method "'.$method.'" not found, maybe no collector was registered for this method.');
     }
 
 }

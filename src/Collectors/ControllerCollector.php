@@ -54,16 +54,24 @@ class ControllerCollector
 
         foreach ($methods as $httpmethod => $classmethods) {
             foreach ($classmethods as $classmethod) {
-                $uri = preg_replace_callback('~(^|[a-z])([A-Z])~', function ($matches) {
-                    return strtolower(strlen($matches[1]) ? $matches[1].'/'.$matches[2] : $matches[2]);
-                }, $classmethod);
+                $uri = preg_replace_callback('~(^|[a-z])([A-Z])~', [$this, 'getControllerAction'], $classmethod);
 
                 $method  = $httpmethod . $classmethod;
                 $dinamic = $this->getMethodDinamicPattern($controller, $method);
 
-                $this->collector->map($httpmethod, "/$uri$dinamic", "$controller#$method");   
+                $this->collector->map($httpmethod, '/' . $uri . $dinamic, $controller . '#' . $method);
             }
         }
+    }
+
+    /**
+     * Transform camelcased strings into URIs.
+     *
+     * @return string
+     */
+    public function getControllerAction($matches)
+    {
+        return strtolower(strlen($matches[1]) ? $matches[1] . '/' . $matches[2] : $matches[2]);
     }
 
     /**
@@ -107,18 +115,13 @@ class ControllerCollector
             $types = $this->getParamsConstraint($method);
 
             for ($i = 0; $i < $count; ++$i) {
-                if ($parameters[$i]->isOptional()) {
+                $parameter = $parameters[$i];
+
+                if ($parameter->isOptional()) {
                     $uri .= '[';
                 }
 
-                $name = $parameters[$i]->name;
-                $uri .= '/{' . $name;
-
-                if (isset($types[$name])) {
-                    $uri .= ':' . $types[$name] . '}';
-                } else {
-                    $uri .= '}';
-                }
+                $uri .= $this->getUriConstraint($parameter, $types);
             }
 
             for ($i = $i - 1; $i >= 0; --$i) {
@@ -132,6 +135,25 @@ class ControllerCollector
     }
 
     /**
+     * Return a URi segment based on parameters constraints.
+     *
+     * @param \ReflectionParameter $parameter The parameter base to build the constraint.
+     * @param array $types All the parsed constraints.
+     * @return string
+     */
+    protected function getUriConstraint($parameter, $types)
+    {
+        $name = $parameter->name;
+        $uri  = '/{' . $name;
+
+        if (isset($types[$name])) {
+            return  $uri . ':' . $types[$name] . '}';
+        } else {
+            return $uri . '}';
+        }
+    }
+
+    /**
      * Get all parameters with they constraint.
      *
      * @param \ReflectionMethod $method The method to be inspected name.
@@ -139,8 +161,9 @@ class ControllerCollector
      */
     protected function getParamsConstraint($method)
     {
-        preg_match_all('~\@param (int|integer|string) \$([a-zA-Z]+)?~', $method->getDocComment(), $types, PREG_SET_ORDER);
         $params = [];
+        preg_match_all('~\@param\s(int|integer|string)\s\$([a-zA-Z]+)\s(Match \((.+)\))?~', 
+            $method->getDocComment(), $types, PREG_SET_ORDER);
 
         foreach ((array) $types as $type) {
             $params[$type[2]] = $this->getParamConstraint($type);
@@ -157,6 +180,10 @@ class ControllerCollector
      */
     protected function getParamConstraint($type)
     {
+        if (isset($type[4])) {
+            return $type[4];
+        }
+
         switch ($type[1]) {
             case 'int': case 'integer':
                 return '\d+';

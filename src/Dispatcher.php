@@ -22,7 +22,7 @@ class Dispatcher
     /**
      * The action dispatch strategy object.
      *
-     * @var \Codeburner\Router\Strategies\StrategyAbstract 
+     * @var \Codeburner\Router\Strategies\DispatcherStrategyInterface
      */
     protected $strategy;
 
@@ -36,13 +36,13 @@ class Dispatcher
     /**
      * Construct the route dispatcher.
      *
-     * @param \Codeburner\Router\Collection                  $collection The collection to save routes.
-     * @param \Codeburner\Router\Strategies\StrategyAbstract $strategy   The strategy to dispatch matched route action.
+     * @param \Codeburner\Router\Collection $collection The collection to save routes.
+     * @param \Codeburner\Router\Strategies\DispatcherStrategyInterface $strategy The strategy to dispatch matched route action.
      */
-    public function __construct(Collection $collection = null, Strategies\StrategyAbstract $strategy = null)
+    public function __construct(Collection $collection = null, Strategies\DispatcherStrategyInterface $strategy = null)
     {
         $this->collection = $collection ?: new Collection;
-        $this->strategy   = $strategy   ?: new Strategies\UriStrategy;
+        $this->strategy   = $strategy   ?: new Strategies\UriDispatcherStrategy;
     }
 
     /**
@@ -137,9 +137,11 @@ class Dispatcher
         $methods = [];
         $staticRoutesCollection = $this->collection->getStaticRoutes();
 
-        foreach ($staticRoutesCollection as $other_method => $routes) {
-            if (!isset($methods[$other_method]) && $other_method != $method && isset($routes[$uri])) {
-                $methods[$other_method] = $routes[$uri];
+        unset($staticRoutesCollection[$method]);
+
+        foreach ($staticRoutesCollection as $method => $routes) {
+            if (!isset($methods[$method]) && isset($routes[$uri])) {
+                $methods[$method] = $routes[$uri];
             }
         }
 
@@ -158,12 +160,13 @@ class Dispatcher
         $methods = [];
         $dinamicRoutesCollection = $this->collection->getDinamicRoutes();
 
-        foreach ($dinamicRoutesCollection as $other_method => $routes) {
-            if (!isset($methods[$other_method]) 
-                    && $other_method != $method
-                        && $route = $this->dispatchDinamicRoute(
-                                $this->collection->getCompiledDinamicRoutes($other_method), $uri)) {
-                $methods[$other_method] = $route;
+        unset($dinamicRoutesCollection[$method]);
+
+        foreach ($dinamicRoutesCollection as $method => $routes) {
+            if (!isset($methods[$method]) 
+                    && $route = $this->dispatchDinamicRoute(
+                            $this->collection->getCompiledDinamicRoutes($method), $uri)) {
+                $methods[$method] = $route;
             }
         }
 
