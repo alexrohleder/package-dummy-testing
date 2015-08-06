@@ -159,10 +159,8 @@ class Collector
      * name as a uri. The uri will be the method name with slashes before every camelcased 
      * word and without the HTTP method prefix. 
      * e.g. getSomePage will generate a route to: GET some/page
-     *
-     * @param string|object $controller The controller(s) name(s) or representation(s).
      */
-    public function controller($controller)
+    public function controller()
     {
         $collector = $this->getControllerCollector();
         
