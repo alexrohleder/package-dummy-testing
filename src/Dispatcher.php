@@ -117,8 +117,8 @@ class Dispatcher
     {
         $dm = $dm = [];
 
-        if ($sm = $this->checkStaticRouteInOtherMethods($method, $uri) 
-                || $dm = $this->checkDinamicRouteInOtherMethods($method, $uri)) {
+        if ($sm = ($this->checkStaticRouteInOtherMethods($method, $uri)) 
+                || $dm = ($this->checkDinamicRouteInOtherMethods($method, $uri))) {
             throw new Exceptions\MethodNotAllowedException($method, $uri, array_merge((array) $sm, (array) $dm));
         }
 

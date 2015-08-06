@@ -134,7 +134,7 @@ class ControllerCollector
     /**
      * Get all parameters with they constraint.
      *
-     * @param string $method The method to be inspected name.
+     * @param \ReflectionMethod $method The method to be inspected name.
      * @return array All the parameters with they constraint
      */
     protected function getParamsConstraint($method)

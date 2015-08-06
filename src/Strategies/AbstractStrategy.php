@@ -27,7 +27,7 @@ abstract class AbstractStrategy
      *
      * @return mixed The response of request.
      */
-    public abstract function dispatch($action, array $params);
+    abstract public function dispatch($action, array $params);
 
     /**
      * String that will divide controller from methods in the action string.

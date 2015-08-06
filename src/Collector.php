@@ -145,7 +145,7 @@ class Collector
     /**
      * Register a route into given HTTP method.
      *
-     * @param string|array   $method The method that must be matched.
+     * @param string         $method The method that must be matched.
      * @param string         $pattern The URi pattern that should be matched.
      * @param string|closure $action  The action that must be executed in case of match.
      */
@@ -162,7 +162,7 @@ class Collector
      *
      * @param string|object $controller The controller(s) name(s) or representation(s).
      */
-    public function controller()
+    public function controller($controller)
     {
         $collector = $this->getControllerCollector();
         
@@ -252,9 +252,25 @@ class Collector
      */
     public function setCollector($methods, $collector)
     {
-        foreach ((array) $methods as $collector) {
-            $this->collectors[$name] = $collector;
+        foreach ((array) $methods as $method) {
+            $this->collectors[$method] = $collector;
         }
+    }
+
+    /**
+     * Seek for a more specific collector method.
+     *
+     * @param string $method The collector method requested.
+     * @param array  $params The parameters passed to the method.
+     * @return mixed
+     */
+    public function __call($method, $params)
+    {
+        if (isset($this->collectors[$method])) {
+            return call_user_func_array($this->collectors[$method], $params);
+        }
+
+        throw new \Exception('Collector method "'.$method.'" not found, maybe no colector have been registered.');
     }
 
 }
