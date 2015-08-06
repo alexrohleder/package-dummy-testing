@@ -74,11 +74,8 @@ class Collection
         $numOptionals = strlen($pattern) - strlen($patternWithoutClosingOptionals);
 
         $segments = preg_split('~' . self::DINAMIC_REGEX . '(*SKIP)(*F) | \[~x', $patternWithoutClosingOptionals);
-
-        if ($numOptionals !== count($segments) - 1) {
-            $this->getSpecificPatternOptionalErrorMessage($patternWithoutClosingOptionals);
-        }
-
+        $this->checkSegmentsOptionals($segments, $numOptionals, $patternWithoutClosingOptionals);
+        
         $current  = '';
         $patterns = [];
 
@@ -99,11 +96,13 @@ class Collection
      *
      * @throws \Exception With a more specific error message.
      */
-    protected function getSpecificPatternOptionalErrorMessage($patternWithoutClosingOptionals)
+    protected function checkSegmentsOptionals($segments, $numOptionals, $patternWithoutClosingOptionals)
     {
-        if (preg_match('~' . self::DINAMIC_REGEX . '(*SKIP)(*F) | \]~x', $patternWithoutClosingOptionals)) {
-               throw new \Exception('Optional segments can only occur at the end of a route.');
-        } else throw new \Exception('Number of opening \'[\' and closing \']\' does not match.');
+        if ($numOptionals !== count($segments) - 1) {
+            if (preg_match('~' . self::DINAMIC_REGEX . '(*SKIP)(*F) | \]~x', $patternWithoutClosingOptionals)) {
+                   throw new \Exception('Optional segments can only occur at the end of a route.');
+            } else throw new \Exception('Number of opening \'[\' and closing \']\' does not match.');
+        }
     }
 
     /**
