@@ -131,7 +131,7 @@ class Collector
     /**
      * Register a route into given HTTP method(s).
      *
-     * @param string                $method The method that must be matched.
+     * @param string                $methods The method that must be matched.
      * @param string                $pattern The URi pattern that should be matched.
      * @param string|array|\closure $action  The action that must be executed in case of match.
      */
