@@ -36,8 +36,8 @@ class Dispatcher
     /**
      * Construct the route dispatcher.
      *
-     * @param \Codeburner\Router\Collection                  $collector The collection to save routes.
-     * @param \Codeburner\Router\Strategies\StrategyAbstract $strategy  The strategy to dispatch matched route action.
+     * @param \Codeburner\Router\Collection                  $collection The collection to save routes.
+     * @param \Codeburner\Router\Strategies\StrategyAbstract $strategy   The strategy to dispatch matched route action.
      */
     public function __construct(Collection $collection = null, Strategies\StrategyAbstract $strategy = null)
     {

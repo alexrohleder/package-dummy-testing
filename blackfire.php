@@ -1,6 +1,8 @@
 <?php
 
 include 'src/Collection.php';
+include 'src/Collectors/ControllerCollector.php';
+include 'src/Collectors/ResourceCollector.php';
 include 'src/Collector.php';
 include 'src/Dispatcher.php';
 include 'src/Strategies/AbstractStrategy.php';
@@ -8,14 +10,14 @@ include 'src/Strategies/UriStrategy.php';
 include 'src/Exceptions/MethodNotAllowedException.php';
 include 'src/Exceptions/NotFoundException.php';
 
-class Test {
+class TestController {
 
     /**
      * blablabla
      *
-     * @param integer $id blablabla
+     * @param integer $id Match ([a-ZA-Z]{5})
      */
-    public function getSomeTest($id, $name)
+    public function getSomeTest($id, $name = '')
     {
         echo "funfo $id $name";
     }
@@ -27,8 +29,8 @@ $c->get('/user/{id:\d+}[/{name}]', function ($id, $name = 'unknown') {
     echo "hello $name your id is $id";
 });
 
-$c->controller('Test');
-
+$c->controller('TestController');
+$c->resource('TestController');
 
 try {
     $d = new Codeburner\Router\Dispatcher($c->getCollection());

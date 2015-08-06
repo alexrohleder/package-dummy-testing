@@ -27,6 +27,13 @@ class Collector
     protected $collection;
 
     /**
+     * All the custom route collectors.
+     *
+     * @var \Codeburner\Router\Collectors\CollectorInterface
+     */
+    protected $collectors = [];
+
+    /**
      * Supported HTTP methods.
      *
      * @var array
@@ -124,7 +131,7 @@ class Collector
     /**
      * Register a route into given HTTP method(s).
      *
-     * @param string|array   $methods The method(s) that must be excluded.
+     * @param string|array   $methods The method(s) that must be included.
      * @param string         $pattern The URi pattern that should be matched.
      * @param string|closure $action  The action that must be executed in case of match.
      */
@@ -136,119 +143,118 @@ class Collector
     }
 
     /**
+     * Register a route into given HTTP method.
+     *
+     * @param string|array   $method The method that must be matched.
+     * @param string         $pattern The URi pattern that should be matched.
+     * @param string|closure $action  The action that must be executed in case of match.
+     */
+    public function map($method, $pattern, $action)
+    {
+        $this->collection->set($method, $pattern, $action);
+    }
+
+    /**
      * Maps all the controller methods that begins with a HTTP method, and maps the rest of
      * name as a uri. The uri will be the method name with slashes before every camelcased 
      * word and without the HTTP method prefix. 
      * e.g. getSomePage will generate a route to: GET some/page
      *
-     * @param string|object The controller name or representation.
+     * @param string|object $controller The controller(s) name(s) or representation(s).
      */
-    public function controller($controller)
+    public function controller()
     {
-        if (!$methods = get_class_methods($controller)) {
-            throw new \Exception('The controller class coul\'d not be inspected.');
-        }
-
-        $methods = $this->getControllerMethods($methods);
-
-        foreach ($methods as $httpmethod => $classmethods) {
-            foreach ($classmethods as $classmethod) {
-                $uri = preg_replace(
-                    '/(^|[a-z])([A-Z])/e', 
-                    'strtolower(strlen("\\1") ? "\\1/\\2" : "\\2")',
-                    $classmethod 
-                );
-
-                $method  = $httpmethod . $classmethod;
-                $dinamic = $this->getMethodDinamicPattern($controller, $method);
-
-                $this->collection->set($httpmethod, "/$uri$dinamic", "$controller#$method");   
-            }
-        }
-    }
-
-    /**
-     * Maps the controller methods to HTTP methods.
-     *
-     * @param array $methods All the controller public methods
-     * @return array An array keyed by HTTP methods and their controller methods.
-     */
-    protected function getControllerMethods($methods)
-    {
-        $mapmethods = [];
-
-        foreach ($methods as $classmethod) {
-            foreach ($this->methods as $httpmethod) {
-                if (($pos = strpos($classmethod, $httpmethod)) === 0) {
-                    $mapmethods[$httpmethod][] = substr($classmethod, strlen($httpmethod));
-                }
-            }
-        }
-
-        return $mapmethods;
-    }
-
-    protected function getMethodDinamicPattern($controller, $method)
-    {
-        $method = new \ReflectionMethod($controller, $method);
-
-        if (!$parameters = $method->getParameters()) {
-            return '';
-        }
-
-        $uri   = '';
-        $count = count($parameters);
-        $types = $this->getMethodParamsPattern($method);
-
-        for ($i = 0; $i < $count; ++$i) {
-            if ($parameters[$i]->isOptional()) {
-                $uri .= '[';
-            }
-
-            $name = $parameters[$i]->name;
-            $uri .= '/{' . $name;
-
-            if (isset($types[$name])) {
-                $uri .= ':' . $types[$name] . '}';
-            }
-        }
-
-        for ($i = $i - 1; $i >= 0; --$i) {
-            $uri = rtrim($uri, '}') . '}';
-
-            if ($parameters[$i]->isOptional()) {
-                $uri .= ']';
-            }
-        }
-
-        return $uri;
-    }
-
-    protected function getMethodParamsPattern($method)
-    {
-        preg_match_all('~\@param (int|integer|string) \$([a-zA-Z]+)~', $method->getDocComment(), $types, PREG_SET_ORDER);
+        $collector = $this->getControllerCollector();
         
-        $params = [];
-        foreach ($types as $type) {
-            switch ($type[1]) {
-                case 'int': case 'integer':
-                    $params[$type[2]] = '\d+'; break;
-                case 'string':
-                    $params[$type[2]] = '\w+'; break;
-            }
+        foreach (func_get_args() as $controller) {
+            call_user_func([$collector, 'controller'], $controller);
         }
-
-        return $params;
     }
 
     /**
-     * Get the getCollection() of routes.
+     * Resource routing allows you to quickly declare all of the common routes for a given resourceful controller. 
+     * Instead of declaring separate routes for your index, show, new, edit, create, update and destroy actions, 
+     * a resourceful route declares them in a single line of code
+     *
+     * @param string|object $controller The controller name or representation.
+     * @param array         $options Some options like, 'as' to name the route pattern, 'only' to
+     *                               explicty say that only this routes will be registered, and 
+     *                               except that register all the routes except the indicates.
+     */
+    public function resource($controller, array $options = array())
+    {
+        call_user_func([$this->getResourceCollector(), 'resource'], $controller, $options);
+    }
+
+    /**
+     * Get a instance of Controller Collector.
+     *
+     * @return \Codeburner\Router\Collectors\ControllerCollector
+     */
+    protected function getControllerCollector()
+    {
+        if (!isset($this->collectors['controller'])) {
+            return $this->collectors['controller'] = new Collectors\ControllerCollector($this);
+        }
+
+        return $this->collectors['controller'];
+    }
+
+    /**
+     * Get a isntance of Resource Collector.
+     *
+     * @return \Codeburner\Router\Collectors\ResourceCollector
+     */
+    protected function getResourceCollector()
+    {
+        if (!isset($this->collectors['resource'])) {
+            return $this->collectors['resource'] = new Collectors\ResourceCollector($this);
+        }
+
+        return $this->collectors['resource'];
+    }
+
+    /**
+     * Get the collection of routes.
      *
      * @return \Codeburner\Router\Collection
      */
     public function getCollection()
     {
         return $this->collection;
+    }
+
+    /**
+     * All the supported HTTP methods.
+     *
+     * @return array
+     */
+    public function getHttpMethods()
+    {
+        return $this->methods;
+    }
+
+    /**
+     * get all the route especific route collectors.
+     *
+     * @return array
+     */
+    public function getCollectors()
+    {
+        return $this->collectors;
+    }
+
+    /**
+     * Set a new especific collector method into this route collector.
+     *
+     * @param string|array $methods   All the collector methods that will be acessivel through this class.
+     * @param object       $collector The collector instance.
+     */
+    public function setCollector($methods, $collector)
+    {
+        foreach ((array) $methods as $collector) {
+            $this->collectors[$name] = $collector;
+        }
     }
 
 }
