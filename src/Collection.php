@@ -96,6 +96,10 @@ class Collection
     /**
      * Parse the pattern seeking for the error and show a more specific message.
      *
+     * @param array $segments 
+     * @param integer $numOptionals 
+     * @param string $patternWithoutClosingOptionals 
+     *
      * @throws \Exception With a more specific error message.
      */
     protected function checkSegmentsOptionals($segments, $numOptionals, $patternWithoutClosingOptionals)

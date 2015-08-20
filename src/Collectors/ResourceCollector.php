@@ -53,6 +53,8 @@ class ResourceCollector implements CollectorInterface
 
     /**
      * Register all the collector extension methods.
+     *
+     * @return void
      */
     public function register()
     {

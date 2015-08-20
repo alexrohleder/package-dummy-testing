@@ -69,20 +69,16 @@ class Dispatcher
     public function dispatch($method, $uri, $quiet = false)
     {
         $method = strtoupper($method);
-        $uri    = parse_url(substr(strstr(";$uri", ";{$this->basepath}"), strlen(";{$this->basepath}")), PHP_URL_PATH);
+        $path = $this->getUrlPath($uri);
 
-        if (!$uri) {
-            throw new \Exception('Seriously malformed URL passed to route dispatcher.');
-        }
-
-        if ($route = $this->collection->getStaticRoute($method, $uri)) {
+        if ($route = $this->collection->getStaticRoute($method, $path)) {
             return $this->getStrategy($route['strategy'])->dispatch(
                 $route['action'],
                 []
             );
         }
 
-        if ($route = $this->matchDinamicRoute($this->collection->getCompiledDinamicRoutes($method), $uri)) {
+        if ($route = $this->matchDinamicRoute($this->collection->getCompiledDinamicRoutes($method), $path)) {
             return $this->getStrategy($route['strategy'])->dispatch(
                 $this->resolveDinamicRouteAction($route['action'], $route['params']), 
                 []
@@ -93,7 +89,24 @@ class Dispatcher
             return false;
         }
 
-        $this->dispatchNotFoundRoute($method, $uri);
+        $this->dispatchNotFoundRoute($method, $path);
+    }
+
+    /**
+     * Get only the path of a given url or uri.
+     *
+     * @param string $uri The given URL
+     * @return string
+     */
+    protected function getUrlPath($uri)
+    {
+        $path = parse_url(substr(strstr(";$uri", ";{$this->basepath}"), strlen(";{$this->basepath}")), PHP_URL_PATH);
+
+        if ($path === false) {
+            throw new \Exception('Seriously malformed URL passed to route dispatcher.');
+        }
+
+        return $path;
     }
 
     /**
