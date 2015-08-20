@@ -71,6 +71,10 @@ class Dispatcher
         $method = strtoupper($method);
         $uri    = parse_url(substr(strstr(";$uri", ";{$this->basepath}"), strlen(";{$this->basepath}")), PHP_URL_PATH);
 
+        if (!$uri) {
+            throw new \Exception('Seriously malformed URL passed to route dispatcher.');
+        }
+
         if ($route = $this->collection->getStaticRoute($method, $uri)) {
             return $this->getStrategy($route['strategy'])->dispatch(
                 $route['action'],
