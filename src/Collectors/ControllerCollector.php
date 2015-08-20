@@ -104,7 +104,7 @@ class ControllerCollector implements CollectorInterface
      *
      * @return string
      */
-    protected function getPathPrefix($prefix)
+    protected function getPathPrefix($prefix, $controller)
     {
         $path = '/';
 
