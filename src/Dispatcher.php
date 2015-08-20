@@ -10,6 +10,9 @@
 
 namespace Codeburner\Router;
 
+use Codeburner\Router\Strategies\StrategyInterface as DispatcherStrategyInterface;
+use Codeburner\Router\Collection as DefaultCollection;
+
 /**
  * Codeburner Router Component.
  *
@@ -22,9 +25,9 @@ class Dispatcher
     /**
      * The action dispatch strategy object.
      *
-     * @var \Codeburner\Router\Strategies\DispatcherStrategyInterface
+     * @var \Codeburner\Router\Strategies\DispatcherStrategyInterface[]
      */
-    protected $strategy;
+    protected $strategies = [];
 
     /**
      * The route collection.
@@ -34,15 +37,24 @@ class Dispatcher
     protected $collection;
 
     /**
+     * Define a basepath to all routes.
+     *
+     * @var string
+     */
+    protected $basepath;
+
+    /**
      * Construct the route dispatcher.
      *
+     * @param string $basepath Define a URI prefix that must be excluded on matches.
      * @param \Codeburner\Router\Collection $collection The collection to save routes.
      * @param \Codeburner\Router\Strategies\DispatcherStrategyInterface $strategy The strategy to dispatch matched route action.
      */
-    public function __construct(Collection $collection = null, Strategies\DispatcherStrategyInterface $strategy = null)
+    public function __construct($basepath = '', Collection $collection = null, DispatcherStrategyInterface $strategy = null)
     {
-        $this->collection = $collection ?: new Collection;
-        $this->strategy   = $strategy   ?: new Strategies\UriDispatcherStrategy;
+        $this->basepath = (string) $basepath;
+        $this->collection = $collection ?: new DefaultCollection;
+        $this->strategies['default'] = $strategy ?: 'Codeburner\Router\Strategies\ConcreteUriStrategy';
     }
 
     /**
@@ -57,13 +69,20 @@ class Dispatcher
     public function dispatch($method, $uri, $quiet = false)
     {
         $method = strtoupper($method);
+        $uri    = parse_url(substr(strstr(";$uri", ";{$this->basepath}"), strlen(";{$this->basepath}")), PHP_URL_PATH);
 
         if ($route = $this->collection->getStaticRoute($method, $uri)) {
-            return $this->strategy->dispatch($route['action'], $route['params']);
+            return $this->getStrategy($route['strategy'])->dispatch(
+                $route['action'],
+                []
+            );
         }
 
-        if ($route = $this->dispatchDinamicRoute($this->collection->getCompiledDinamicRoutes($method), $uri)) {
-            return $this->strategy->dispatch($route['action'], $route['params']);
+        if ($route = $this->matchDinamicRoute($this->collection->getCompiledDinamicRoutes($method), $uri)) {
+            return $this->getStrategy($route['strategy'])->dispatch(
+                $this->resolveDinamicRouteAction($route['action'], $route['params']), 
+                []
+            );
         }
 
         if ($quiet === true) {
@@ -74,7 +93,37 @@ class Dispatcher
     }
 
     /**
-     * Find and dispatch dinamic routes based on the compiled data and uri.
+     * Get an instance of route especific dispatch strategy.
+     *
+     * @throws \Exception
+     * @return \Codeburner\Router\Strategies\StrategyInterface
+     */
+    public function getStrategy($strategy)
+    {
+        if (isset($this->strategies[$strategy])) {
+            if (is_string($this->strategies[$strategy])) {
+                return $this->strategies[$strategy] = new $this->strategies[$strategy];
+            } else { 
+                return $this->strategies[$strategy];
+            }
+        }
+
+        throw new \Exception("Could not be found a strategy called \"$strategy\".");
+    }
+
+    /**
+     * Register a new strategy onto the dispatcher, a route can now use this strategy to be dispatched.
+     *
+     * @param string $name The identifier of the strategy
+     * @param string|\Codeburner\Router\Strategies\StrategyInterface $strategy
+     */
+    public function setStrategy($name, $strategy)
+    {
+        $this->strategies[$name] = $strategy;
+    }
+
+    /**
+     * Find and return the request dinamic route based on the compiled data and uri.
      *
      * @param array  $routes All the compiled data from dinamic routes.
      * @param string $uri    The URi of request.
@@ -82,7 +131,7 @@ class Dispatcher
      * @return array|false If the request match an array with the action and parameters will be returned
      *                     otherwide a false will.
      */
-    protected function dispatchDinamicRoute($routes, $uri)
+    protected function matchDinamicRoute($routes, $uri)
     {
         foreach ($routes as $route) {
             if (!preg_match($route['regex'], $uri, $matches)) {
@@ -130,6 +179,7 @@ class Dispatcher
      *
      * @param string $method The HTTP method that must not be checked
      * @param string $uri    The URi that must be matched.
+     *
      * @return array
      */
     protected function checkStaticRouteInOtherMethods($method, $uri)
@@ -153,6 +203,7 @@ class Dispatcher
      *
      * @param string $method The HTTP method that must not be checked
      * @param string $uri    The URi that must be matched.
+     *
      * @return array
      */
     protected function checkDinamicRouteInOtherMethods($method, $uri)
@@ -164,13 +215,34 @@ class Dispatcher
 
         foreach ($dinamicRoutesCollection as $method => $routes) {
             if (!isset($methods[$method]) 
-                    && $route = $this->dispatchDinamicRoute(
+                    && $route = $this->matchDinamicRoute(
                             $this->collection->getCompiledDinamicRoutes($method), $uri)) {
                 $methods[$method] = $route;
             }
         }
 
         return $methods;
+    }
+
+    /**
+     * Resolve dinamic action, inserting route parameters at requested points.
+     *
+     * @param string|array|closure $action The route action.
+     * @param array                $params The dinamic routes parameters.
+     *
+     * @return string
+     */
+    protected function resolveDinamicRouteAction($action, $params)
+    {
+        if (is_array($action)) {
+            foreach ($action as $key => $value) {
+                if (is_string($value)) {
+                    $action[$key] = str_replace(['{', '}'], '', str_replace(array_keys($params), array_values($params), $value));
+                }
+            }
+        }
+
+        return $action;
     }
 
     /**
@@ -184,13 +256,24 @@ class Dispatcher
     }
 
     /**
-     * Get the current dispatch strategy.
+     * Get the actual base path of this dispatch.
      *
-     * @return \Codeburner\Router\Strategy\AbstractStrategy
+     * @return string
      */
-    public function getStrategy()
+    public function getBasePath()
     {
-        return $this->strategy;
+        return $this->basepath;
+    }
+
+    /**
+     * Set a new basepath, this will be a prefix that must be excluded in every
+     * requested URi.
+     *
+     * @param string $basepath The new basepath
+     */
+    public function setBasePath($basepath)
+    {
+        $this->basepath = $basepath;
     }
 
 }

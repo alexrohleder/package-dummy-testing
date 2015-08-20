@@ -42,21 +42,23 @@ class Collection
      * @param string               $method  The HTTP method of route. {GET, POST, PUT, PATCH, DELETE}
      * @param string               $pattern The URi that route should match.
      * @param string|array|closure $action  The callback for when route is matched.
+     * @param string               $name    The route name for fast lookup.
      */
-    public function set($method, $pattern, $action)
+    public function set($method, $pattern, $action, $strategy = 'default')
     {
         $method = strtoupper($method);
         $patterns = $this->parsePatternOptionals($pattern);
+        $action = is_string($action) ? explode('#', $action) : $action;
 
         foreach ($patterns as $pattern) {
             if (strpos($pattern, '{') !== false) {
 
                 list($pattern, $params) = $this->parsePatternPlaceholders($pattern);
-                $this->dinamics[$method][$pattern] = ['action'  => $action, 'params' => $params];
+                $this->dinamics[$method][$pattern] = ['action' => $action, 'params' => $params, 'strategy' => $strategy];
 
             } else {
 
-                $this->statics[$method][$pattern] = ['action' => $action, 'params' => []];
+                $this->statics[$method][$pattern] = ['action' => $action, 'params' => [], 'strategy' => $strategy];
 
             }
         }

@@ -1,6 +1,6 @@
 <?php
 
-class RouterrTest extends PHPUnit_Framework_TestCase
+class RouterTest extends PHPUnit_Framework_TestCase
 {
 
 	public $collection;
@@ -10,9 +10,8 @@ class RouterrTest extends PHPUnit_Framework_TestCase
 
 	public function setUp()
 	{
-		$this->collection = new Codeburner\Router\Collection;
-		$this->collector  = new Codeburner\Router\Collector($this->collection);
-		$this->dispatcher = new Codeburner\Router\Dispatcher($this->collection);
+		$this->collector  = new Codeburner\Router\Collector;
+		$this->dispatcher = new Codeburner\Router\Dispatcher('', $this->collector);
 
 		parent::setUp();
 	}
@@ -67,24 +66,13 @@ class RouterrTest extends PHPUnit_Framework_TestCase
 		$this->assertTrue( $this->dispatcher->dispatch('get', '/test') );
 	}
 
-	public function testDividerChange()
-	{
-		$this->dispatcher->getStrategy()->setActionDivider('@');
-
-		$this->assertTrue($this->dispatcher->getStrategy()->getActionDivider() === '@');
-
-		$this->collector->get('/{test}', 'DummyController@staticRouteAction');
-
-		$this->assertTrue( $this->dispatcher->dispatch('get', '/test') );
-	}
-
 	public function testCollection()
 	{
 		$collection = new Codeburner\Router\Collection;
 
 		$collection->set('get', '/test', 'DummyController#staticRouteAction');
 
-		$dispatcher = new Codeburner\Router\Dispatcher($collection);
+		$dispatcher = new Codeburner\Router\Dispatcher('', $collection);
 
 		$this->assertTrue( $dispatcher->dispatch('get', '/test') );
 	}
@@ -156,19 +144,54 @@ class RouterrTest extends PHPUnit_Framework_TestCase
 		}
 	}
 
-	public function testMapMethod()
-	{
-		$this->collector->map('post', '/some/{test}', [new DummyController, 'dinamicRouteAction']);
-
-		$this->assertTrue( $this->dispatcher->dispatch('post', '/some/test') );
-	}
-
 	public function testDinamicRoutePattern()
 	{
 		$this->collector->get('/{test:[0-9]+}', [new DummyController, 'dinamicRouteAction']);
 
 		$this->assertFalse( $this->dispatcher->dispatch('GET', '/someStringData', true) );
 		$this->assertTrue( $this->dispatcher->dispatch('GET', '/123') );
+	}
+
+	public function testGroupedRoutes()
+	{
+		$this->collector->group(['prefix' => 'test', 'namespace' => 'TestNamespace'], function ($collector) {
+			$collector->get('/test', 'TestController#test');
+		});
+
+		$this->assertTrue( $this->dispatcher->dispatch('GET', '/test/test') );
+	}
+
+	public function testGroupedGroupRoutes()
+	{
+		$this->collector->group(['prefix' => 'test', 'namespace' => 'TestNamespace'], function ($collector) {
+			$this->collector->group(['prefix' => 'test', 'namespace' => 'SubNamespace'], function ($collector) {
+				$collector->get('/test', 'AnotherTestController#test');
+			});
+		});
+
+		$this->assertTrue( $this->dispatcher->dispatch('GET', '/test/test/test') );
+	}
+
+	public function testContinueAfterGroupedRoutes()
+	{
+		$this->collector->group(['prefix' => 'test', 'namespace' => 'TestNamespace'], function ($collector) {
+			$collector->get('/test', 'TestController#test');
+		});
+
+		$this->assertTrue( $this->dispatcher->dispatch('GET', '/test/test') );
+		
+		$this->collector->get('/test', [new DummyController, 'staticRouteAction']);
+
+		$this->assertTrue( $this->dispatcher->dispatch('GET', '/test') );
+	}
+
+	public function testRouteSpecificStrategy()
+	{
+		$this->dispatcher->setStrategy('InverseStrategy', 'InverseStrategy');
+
+		$this->collector->set('/test', ['DummyController', 'staticRouteAction']);
+
+		$this->assertFalse( $this->dispatcher->dispatch('GET', '/test') );
 	}
 
 }

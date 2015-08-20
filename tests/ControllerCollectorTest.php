@@ -5,10 +5,10 @@ class ControllerCollectorTest extends PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->collection = new Codeburner\Router\Collection;
-        $this->collector  = new Codeburner\Router\Collector($this->collection);
-        $this->dispatcher = new Codeburner\Router\Dispatcher($this->collection);
+        $this->collector  = new Codeburner\Router\Collector;
+        $this->dispatcher = new Codeburner\Router\Dispatcher('', $this->collector);
 
+        $this->collector->accept(new Codeburner\Router\Collectors\ControllerCollector($this->collector), 'controller');
         $this->collector->controller('ControllerCollectorResource');
 
         parent::setUp();

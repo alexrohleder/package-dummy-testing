@@ -10,13 +10,15 @@
 
 namespace Codeburner\Router\Collectors;
 
+use Codeburner\Router\Collector;
+
 /**
  * Codeburner Router Component.
  *
  * @author Alex Rohleder <alexrohleder96@outlook.com>
  * @see https://github.com/codeburnerframework/router
  */
-class ControllerCollector
+class ControllerCollector implements CollectorInterface
 {
 
     /**
@@ -34,7 +36,12 @@ class ControllerCollector
     protected $types = [
         'int' => '\d+',
         'integer' => '\d+',
-        'string' => '\w+'
+        'string' => '\w+',
+        'float' => '[-+]?(\d*[.])?\d+',
+        'bool' => '^(1|0|true|false|yes|no)$',
+        'boolean' => '^(1|0|true|false|yes|no)$',
+        'true' => '^(1|true|yes)$',
+        'false' => '^(0|false|no)$'
     ];
 
     /**
@@ -42,9 +49,21 @@ class ControllerCollector
      *
      * @param \Codeburner\Router\Collector $collector The collector to save routes.
      */
-    public function __construct($collector)
+    public function __construct(\Codeburner\Router\Collector $collector)
     {
         $this->collector = $collector;
+    }
+
+    /**
+     * Register all the collector extension methods.
+     *
+     * @param \Codeburner\Router\Collector $collector
+     */
+    public function register()
+    {
+        $methods = ['controller'];
+        
+        $this->collector->accept($this, $methods);
     }
 
     /**
@@ -54,14 +73,20 @@ class ControllerCollector
      * e.g. getSomePage will generate a route to: GET some/page
      *
      * @param string|object $controller The controller name or representation.
+     * @param bool          $prefix     Dict if the controller name should prefix the path.
      */
-    public function controller($controller)
+    public function controller($controller, $prefix = true)
     {
         if (!$methods = get_class_methods($controller)) {
             throw new \Exception('The controller class coul\'d not be inspected.');
         }
 
         $methods = $this->getControllerMethods($methods);
+        $uprefix = '/';
+
+        if ($prefix === true) {
+            $uprefix .= $this->getControllerName($controller);
+        }
 
         foreach ($methods as $httpmethod => $classmethods) {
             foreach ($classmethods as $classmethod) {
@@ -70,7 +95,7 @@ class ControllerCollector
                 $method  = $httpmethod . $classmethod;
                 $dinamic = $this->getMethodDinamicPattern($controller, $method);
 
-                $this->collector->match($httpmethod, '/' . $uri . $dinamic, $controller . '#' . $method);
+                $this->collector->match($httpmethod, $uprefix . $uri . $dinamic, $controller . '#' . $method);
             }
         }
     }
@@ -86,6 +111,20 @@ class ControllerCollector
     }
 
     /**
+     * Get the controller name without the suffix Controller.
+     *
+     * @return string
+     */
+    public function getControllerName($controller)
+    {
+        if (is_object($controller)) {
+            $controller = get_class($controller);
+        }
+
+        return strtolower(strstr($controller, 'Controller', true));
+    }
+
+    /**
      * Maps the controller methods to HTTP methods.
      *
      * @param array $methods All the controller public methods
@@ -94,7 +133,7 @@ class ControllerCollector
     protected function getControllerMethods($methods)
     {
         $mapmethods = [];
-        $httpmethods = $this->collector->getHttpMethods();
+        $httpmethods = ['get', 'post', 'put', 'patch', 'delete'];
 
         foreach ($methods as $classmethod) {
             foreach ($httpmethods as $httpmethod) {
@@ -173,7 +212,7 @@ class ControllerCollector
     protected function getParamsConstraint($method)
     {
         $params = [];
-        preg_match_all('~\@param\s(int|integer|string)\s\$([a-zA-Z]+)\s(Match \((.+)\))?~', 
+        preg_match_all('~\@param\s('.implode('|', array_keys($this->types)).')\s\$([a-zA-Z]+)\s(Match \((.+)\))?~', 
             $method->getDocComment(), $types, PREG_SET_ORDER);
 
         foreach ((array) $types as $type) {

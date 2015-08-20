@@ -10,21 +10,18 @@
 
 namespace Codeburner\Router;
 
+use Codeburner\Router\Collectors\CollectorInterface;
+use Codeburner\Router\Collectors\ControllerCollector;
+use Codeburner\Router\Collectors\ResourceCollector;
+
 /**
  * Codeburner Router Component.
  *
  * @author Alex Rohleder <alexrohleder96@outlook.com>
  * @see https://github.com/codeburnerframework/router
  */
-class Collector
+class Collector extends Collection
 {
-
-    /**
-     * The route collection.
-     *
-     * @var \Codeburner\Router\Collection
-     */
-    protected $collection;
 
     /**
      * All the custom route collectors.
@@ -41,205 +38,174 @@ class Collector
     protected $methods = ['get', 'post', 'put', 'patch', 'delete'];
 
     /**
-     * Construct the route dispatcher.
+     * The prefix for all the subsequent route patterns.
      *
-     * @param \Codeburner\Router\Collection $collection The collection to save routes.
+     * @var string
      */
-    public function __construct(Collection $collection = null)
-    {
-        $this->collection = $collection ?: new Collection;
-    }
+    protected $prefix = '';
+
+    /**
+     * The namespace for all the subsequent route class action.
+     *
+     * @var string
+     */
+    protected $namespace = '';
 
     /**
      * Register a route into GET method.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function get($pattern, $action)
+    public function get($pattern, $action, $strategy = 'default')
     {
-        $this->collection->set('get', $pattern, $action);
+        $this->set('get', $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
     }
 
     /**
      * Register a route into POST method.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function post($pattern, $action)
+    public function post($pattern, $action, $strategy = 'default')
     {
-        $this->collection->set('post', $pattern, $action);
+        $this->set('post', $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
     }
 
     /**
      * Register a route into PUT method.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function put($pattern, $action)
+    public function put($pattern, $action, $strategy = 'default')
     {
-        $this->collection->set('put', $pattern, $action);
+        $this->set('put', $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
     }
 
     /**
      * Register a route into PATCH method.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function patch($pattern, $action)
+    public function patch($pattern, $action, $strategy = 'default')
     {
-        $this->collection->set('patch', $pattern, $action);
+        $this->set('patch', $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
     }
 
     /**
      * Register a route into DELETE method.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function delete($pattern, $action)
+    public function delete($pattern, $action, $strategy = 'default')
     {
-        $this->collection->set('delete', $pattern, $action);
+        $this->set('delete', $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
     }
 
     /**
      * Register a route into all HTTP methods.
      *
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function any($pattern, $action)
+    public function any($pattern, $action, $strategy = 'default')
     {
-        $this->match($this->methods, $pattern, $action);
+        $this->match($this->methods, $pattern, $action, $strategy);
     }
 
     /**
      * Register a route into all HTTP methods except by $method.
      *
-     * @param string                $method The method that must be excluded.
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string                $method   The method that must be excluded.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function except($method, $pattern, $action)
+    public function except($method, $pattern, $action, $strategy = 'default')
     {
-        $this->match(array_diff($this->methods, (array) $method), $pattern, $action);
+        $this->match(array_diff($this->methods, (array) $method), $pattern, $action, $strategy);
     }
 
     /**
      * Register a route into given HTTP method(s).
      *
-     * @param string|array          $methods The method that must be matched.
-     * @param string                $pattern The URi pattern that should be matched.
-     * @param string|array|\closure $action  The action that must be executed in case of match.
+     * @param string|array          $methods  The method that must be matched.
+     * @param string                $pattern  The URi pattern that should be matched.
+     * @param string|array|\closure $action   The action that must be executed in case of match.
+     * @param string                $strategy The strategy that will be used to execute the $action.
      */
-    public function match($methods, $pattern, $action)
+    public function match($methods, $pattern, $action, $strategy = 'default')
     {
         foreach ((array) $methods as $method) {
-            $this->collection->set($method, $pattern, $action);
+            $this->set($method, $this->getPrefixed($pattern), $this->getNamespaced($action), $strategy);
         }
     }
 
     /**
-     * Maps all the controller methods that begins with a HTTP method, and maps the rest of
-     * name as a uri. The uri will be the method name with slashes before every camelcased 
-     * word and without the HTTP method prefix. 
-     * e.g. getSomePage will generate a route to: GET some/page
-     */
-    public function controller()
-    {
-        $collector = $this->getControllerCollector();
-        
-        foreach (func_get_args() as $controller) {
-            call_user_func([$collector, 'controller'], $controller);
-        }
-    }
-
-    /**
-     * Resource routing allows you to quickly declare all of the common routes for a given resourceful controller. 
-     * Instead of declaring separate routes for your index, show, new, edit, create, update and destroy actions, 
-     * a resourceful route declares them in a single line of code
+     * Integrate a new collector method to this collector.
      *
-     * @param string|object $controller The controller name or representation.
-     * @param array         $options Some options like, 'as' to name the route pattern, 'only' to
-     *                               explicty say that only this routes will be registered, and 
-     *                               except that register all the routes except the indicates.
+     * @param \Codeburner\Collectors\CollectorInterface $collector The collector instance.
+     * @param string|array                              $methods   All the collectors methods that must be registered.
      */
-    public function resource($controller, array $options = array())
-    {
-        call_user_func([$this->getResourceCollector(), 'resource'], $controller, $options);
-    }
-
-    /**
-     * Get a instance of Controller Collector.
-     *
-     * @return \Codeburner\Router\Collectors\ControllerCollector
-     */
-    protected function getControllerCollector()
-    {
-        if (!isset($this->collectors['controller'])) {
-            return $this->collectors['controller'] = new Collectors\ControllerCollector($this);
-        }
-
-        return $this->collectors['controller'];
-    }
-
-    /**
-     * Get a isntance of Resource Collector.
-     *
-     * @return \Codeburner\Router\Collectors\ResourceCollector
-     */
-    protected function getResourceCollector()
-    {
-        if (!isset($this->collectors['resource'])) {
-            return $this->collectors['resource'] = new Collectors\ResourceCollector($this);
-        }
-
-        return $this->collectors['resource'];
-    }
-
-    /**
-     * Get the collection of routes.
-     *
-     * @return \Codeburner\Router\Collection
-     */
-    public function getCollection()
-    {
-        return $this->collection;
-    }
-
-    /**
-     * All the supported HTTP methods.
-     *
-     * @return array
-     */
-    public function getHttpMethods()
-    {
-        return $this->methods;
-    }
-
-    /**
-     * get all the route especific route collectors.
-     *
-     * @return array
-     */
-    public function getCollectors()
-    {
-        return $this->collectors;
-    }
-
-    /**
-     * Set a new especific collector method into this route collector.
-     *
-     * @param string|array $methods   All the collector methods that will be acessivel through this class.
-     * @param object       $collector The collector instance.
-     */
-    public function setCollector($methods, $collector)
+    public function accept(CollectorInterface $collector, $methods)
     {
         foreach ((array) $methods as $method) {
             $this->collectors[$method] = $collector;
+        }
+    }
+
+    /**
+     * Group a given route definitions with shared attributes between then.
+     *
+     * @param array   $attributes All the attributes that will be shared between the given routes.
+     * @param closure $definition A callable that receive this colletor to add new routes.
+     */
+    public function group($attributes, $definition)
+    {
+        $this->setCollectorAttributes($attributes);
+        
+        call_user_func($definition, $this);
+
+        $this->removeCollectorAttributes(array_keys($attributes));
+    }
+
+    /**
+     * Set the user given attributes to the collector.
+     *
+     * @param array $attributes
+     */
+    protected function setCollectorAttributes($attributes)
+    {
+        foreach ($attributes as $attribute => $value) {
+            if (!isset($this->$attribute)) {
+                throw new \Exception("There is no \"$attribute\" attribute for grouped routes.");
+            }
+
+            $method = 'set' . ucfirst(strtolower($attribute));
+            $this->$method($value);
+        }
+    }
+
+    /**
+     * Restaure the collector initial attributes.
+     *
+     * @param array $attributes
+     */
+    protected function removeCollectorAttributes($attributes)
+    {
+        foreach ($attributes as $attribute => $value) {
+            $method = 'set' . ucfirst(strtolower($attribute));
+            $this->$method('');
         }
     }
 
@@ -253,10 +219,78 @@ class Collector
     public function __call($method, $params)
     {
         if (isset($this->collectors[$method])) {
-            return call_user_func_array($this->collectors[$method], $params);
+            return call_user_func_array([$this->collectors[$method], $method], $params);
         }
 
-        throw new \Exception('Collector method "'.$method.'" not found, maybe no collector was registered for this method.');
+        throw new \Exception("Collector method \"$method\" not found, maybe no collector was registered for this method.");
+    }
+
+    /**
+     * Give a prefix for all the subsequent routes.
+     *
+     * @param string $prefix The subsequent routes prefix.
+     */
+    public function setPrefix($prefix)
+    {
+        if (empty($prefix)) $this->prefix = '';
+        else $this->prefix .= '/' . trim($prefix, '/');
+    }
+
+    /**
+     * Get the current routes prefix.
+     *
+     * @return string
+     */
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    /**
+     * Prefix the route pattern.
+     *
+     * @param string $pattern The route pattern.
+     * @return string
+     */
+    protected function getPrefixed($pattern)
+    {
+        return $this->prefix . '/' . ltrim($pattern, '/');
+    }
+
+    /**
+     * Set a namespace for each string action of the subsequent routes.
+     *
+     * @param string $namespace The subsequent routes string action namespace.
+     * @return string
+     */
+    public function setNamespace($namespace)
+    {
+        if (empty($namespace)) $this->namespace = '';
+        else $this->namespace .= '\\' . trim($namespace, '\\');
+    }
+
+    /**
+     * Get the current namespace for string action.
+     *
+     * @return string
+     */
+    public function getNamespace()
+    {
+        return $this->namespace;
+    }
+
+    /**
+     * Namespace the given string action.
+     *
+     * @return string
+     */
+    protected function getNamespaced($action)
+    {
+        if (is_string($action)) {
+            return $this->namespace . '\\' . ltrim($action, '\\');
+        }
+
+        return $action;
     }
 
 }

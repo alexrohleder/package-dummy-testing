@@ -16,7 +16,7 @@ namespace Codeburner\Router\Collectors;
  * @author Alex Rohleder <alexrohleder96@outlook.com>
  * @see https://github.com/codeburnerframework/router
  */
-class ResourceCollector
+class ResourceCollector implements CollectorInterface
 {
 
     /**
@@ -32,7 +32,7 @@ class ResourceCollector
      * @var array
      */
     protected $map = [
-        'index' => ['get', '/:name/'],
+        'index' => ['get', '/:name'],
         'make' => ['get', '/:name/make'],
         'create' => ['post', '/:name'],
         'show' => ['get', '/:name/{id}'],
@@ -46,9 +46,21 @@ class ResourceCollector
      *
      * @param \Codeburner\Router\Collector $collector The collector to save routes.
      */
-    public function __construct($collector)
+    public function __construct(\Codeburner\Router\Collector $collector)
     {
         $this->collector = $collector;
+    }
+
+    /**
+     * Register all the collector extension methods.
+     *
+     * @param \Codeburner\Router\Collector $collector
+     */
+    public function register()
+    {
+        $methods = ['resource'];
+        
+        $this->collector->accept($this, $methods);
     }
 
     /**
@@ -64,12 +76,11 @@ class ResourceCollector
     public function resource($controller, array $options = array())
     {
         $name = $this->getName($controller, $options);
-        $actions = array_flip($this->getActions(array_keys($this->map), $options));
+        $actions = $this->getActions($options);
 
-        foreach ($this->map as $action => $map) {
-            if (isset($actions[$action])) {
-                $this->collector->match($map[0], str_replace(':name', $name, $map[1]), [$controller, $action]);
-            }
+        foreach ($actions as $action => $map) {
+            $this->collector->match($map[0], str_replace(':name', $name, $map[1]), 
+                is_string($controller) ? "$controller#$action" : [$controller, $action]);
         }
     }
 
@@ -88,7 +99,7 @@ class ResourceCollector
             $controller = get_class($controller);
         }
 
-        return strstr(array_reverse(explode('\\', $controller))[0], 'Controller', true);
+        return strtolower(strstr(array_reverse(explode('\\', $controller))[0], 'Controller', true));
     }
 
     /**
@@ -96,17 +107,42 @@ class ResourceCollector
      *
      * @return string
      */
-    protected function getActions($actions, $options)
+    protected function getActions($options)
     {
+        $actions = $this->map;
+
         if (isset($options['only'])) {
-            $actions = $options['only'];
+            $actions = $this->getFilteredActions($options['only'], true);
         }
 
         if (isset($options['except'])) {
-            $actions = array_diff($actions, $options['except']);
+            $actions = $this->getFilteredActions($options['except'], false);
         }
 
         return $actions;
+    }
+
+    /**
+     * Filter the actions array.
+     *
+     * @param string|array $actions All the actions that should be registered.
+     * @param boolean      $exists  Indicates if the action should be removed or not.
+     * 
+     * @return array All the actions
+     */
+    protected function getFilteredActions($actions, $exists)
+    {
+        $result = $this->map;
+        $actions = array_change_key_case(array_flip((array) $actions), CASE_LOWER);
+
+        foreach ($result as $action => $map) {
+            if ((isset($actions[$map[0]]) && !$exists)
+                    || (!isset($actions[$map[0]]) && $exists)) {
+                unset($result[$action]);
+            }   
+        }
+
+        return $result;
     }
 
 }
