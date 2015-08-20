@@ -39,10 +39,10 @@ class Collection
     /**
      * Insert a route into the collection.
      *
-     * @param string               $method  The HTTP method of route. {GET, POST, PUT, PATCH, DELETE}
-     * @param string               $pattern The URi that route should match.
-     * @param string|array|closure $action  The callback for when route is matched.
-     * @param string               $name    The route name for fast lookup.
+     * @param string               $method   The HTTP method of route. {GET, POST, PUT, PATCH, DELETE}
+     * @param string               $pattern  The URi that route should match.
+     * @param string|array|closure $action   The callback for when route is matched.
+     * @param string               $strategy The strategy that will be used to execute the $action.
      */
     public function set($method, $pattern, $action, $strategy = 'default')
     {

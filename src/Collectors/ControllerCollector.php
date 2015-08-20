@@ -56,8 +56,6 @@ class ControllerCollector implements CollectorInterface
 
     /**
      * Register all the collector extension methods.
-     *
-     * @param \Codeburner\Router\Collector $collector
      */
     public function register()
     {

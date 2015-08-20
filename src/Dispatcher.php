@@ -10,7 +10,7 @@
 
 namespace Codeburner\Router;
 
-use Codeburner\Router\Strategies\StrategyInterface as DispatcherStrategyInterface;
+use Codeburner\Router\Strategies\StrategyInterface;
 use Codeburner\Router\Collection as DefaultCollection;
 
 /**
@@ -25,7 +25,7 @@ class Dispatcher
     /**
      * The action dispatch strategy object.
      *
-     * @var \Codeburner\Router\Strategies\DispatcherStrategyInterface[]
+     * @var \Codeburner\Router\Strategies\StrategyInterface[]
      */
     protected $strategies = [];
 
@@ -48,9 +48,9 @@ class Dispatcher
      *
      * @param string $basepath Define a URI prefix that must be excluded on matches.
      * @param \Codeburner\Router\Collection $collection The collection to save routes.
-     * @param \Codeburner\Router\Strategies\DispatcherStrategyInterface $strategy The strategy to dispatch matched route action.
+     * @param \Codeburner\Router\Strategies\StrategyInterface $strategy The strategy to dispatch matched route action.
      */
-    public function __construct($basepath = '', Collection $collection = null, DispatcherStrategyInterface $strategy = null)
+    public function __construct($basepath = '', Collection $collection = null, StrategyInterface $strategy = null)
     {
         $this->basepath = (string) $basepath;
         $this->collection = $collection ?: new DefaultCollection;
