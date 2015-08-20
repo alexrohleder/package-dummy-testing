@@ -82,11 +82,7 @@ class ControllerCollector implements CollectorInterface
         }
 
         $methods = $this->getControllerMethods($methods);
-        $uprefix = '/';
-
-        if ($prefix === true) {
-            $uprefix .= $this->getControllerName($controller);
-        }
+        $prefix = $this->getPathPrefix($prefix);
 
         foreach ($methods as $httpmethod => $classmethods) {
             foreach ($classmethods as $classmethod) {
@@ -95,9 +91,26 @@ class ControllerCollector implements CollectorInterface
                 $method  = $httpmethod . $classmethod;
                 $dinamic = $this->getMethodDinamicPattern($controller, $method);
 
-                $this->collector->match($httpmethod, $uprefix . $uri . $dinamic, $controller . '#' . $method);
+                $this->collector->match($httpmethod, $prefix . $uri . $dinamic, $controller . '#' . $method);
             }
         }
+    }
+
+    /**
+     * Give a prefix for the controller routes paths.
+     *
+     * @param bool $prefix Must prefix?
+     * @return string
+     */
+    protected function getPathPrefix($prefix)
+    {
+        $path = '/';
+
+        if ($prefix === true) {
+            $path .= $this->getControllerName($controller);
+        }
+
+        return $path;
     }
 
     /**
