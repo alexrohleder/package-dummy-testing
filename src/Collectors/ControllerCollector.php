@@ -82,7 +82,7 @@ class ControllerCollector implements CollectorInterface
         }
 
         $methods = $this->getControllerMethods($methods);
-        $prefix = $this->getPathPrefix($prefix);
+        $prefix = $this->getPathPrefix($prefix, $controller);
 
         foreach ($methods as $httpmethod => $classmethods) {
             foreach ($classmethods as $classmethod) {
@@ -100,6 +100,8 @@ class ControllerCollector implements CollectorInterface
      * Give a prefix for the controller routes paths.
      *
      * @param bool $prefix Must prefix?
+     * @param string|object $controller The controller name or representation.
+     *
      * @return string
      */
     protected function getPathPrefix($prefix)
